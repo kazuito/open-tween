@@ -11679,7 +11679,7 @@ namespace OpenTween
                 return;
             }
             var ev = e.EventData;
-            StatusLabel.Text = "Event: " + ev.Event;
+            StatusEventLabel.Text = "[" + ev.CreatedAt.ToLongTimeString() + "] " + ev.Event + " by " + ev.Username;
             //if (ev.Event == "favorite")
             //{
             //    NotifyFavorite(ev);

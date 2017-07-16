@@ -20,6 +20,7 @@
             this.ToolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
             this.StatusStrip1 = new System.Windows.Forms.StatusStrip();
             this.StatusLabelUrl = new System.Windows.Forms.ToolStripStatusLabel();
+            this.StatusEventLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.StatusLabel = new OpenTween.OpenTweenCustomControl.ToolStripLabelHistory();
             this.toolStripApiGauge = new OpenTween.ToolStripAPIGauge();
             this.HashStripSplitButton = new System.Windows.Forms.ToolStripSplitButton();
@@ -311,6 +312,7 @@
             resources.ApplyResources(this.StatusStrip1, "StatusStrip1");
             this.StatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabelUrl,
+            this.StatusEventLabel,
             this.StatusLabel,
             this.toolStripApiGauge,
             this.HashStripSplitButton});
@@ -326,6 +328,12 @@
             this.StatusLabelUrl.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.StatusLabelUrl.Name = "StatusLabelUrl";
             this.StatusLabelUrl.Spring = true;
+            // 
+            // StatusEventLabel
+            // 
+            this.StatusEventLabel.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
+            this.StatusEventLabel.Name = "StatusEventLabel";
+            resources.ApplyResources(this.StatusEventLabel, "StatusEventLabel");
             // 
             // StatusLabel
             // 
@@ -468,8 +476,8 @@
             // 
             // TimelinePanel
             // 
-            this.TimelinePanel.Controls.Add(this.ListTab);
             resources.ApplyResources(this.TimelinePanel, "TimelinePanel");
+            this.TimelinePanel.Controls.Add(this.ListTab);
             this.TimelinePanel.Name = "TimelinePanel";
             // 
             // ListTab
@@ -653,7 +661,10 @@
             // tweetDetailsView
             // 
             resources.ApplyResources(this.tweetDetailsView, "tweetDetailsView");
+            this.tweetDetailsView.DumpPostClass = false;
+            this.tweetDetailsView.IconCache = null;
             this.tweetDetailsView.Name = "tweetDetailsView";
+            this.tweetDetailsView.Owner = null;
             this.tweetDetailsView.StatusChanged += new System.EventHandler<OpenTween.TweetDetailsViewStatusChengedEventArgs>(this.tweetDetailsView_StatusChanged);
             // 
             // TableLayoutPanel2
@@ -2358,5 +2369,6 @@
         private System.Windows.Forms.ToolStripMenuItem SourceRuleMenuItem;
         private System.Windows.Forms.TableLayoutPanel TableLayoutPanel2;
         private TweetDetailsView tweetDetailsView;
+        private System.Windows.Forms.ToolStripStatusLabel StatusEventLabel;
     }
 }
