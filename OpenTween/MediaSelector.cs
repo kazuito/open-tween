@@ -154,9 +154,6 @@ namespace OpenTween
 
             this.pictureService = new Dictionary<string, IMediaUploadService> {
                 ["Twitter"] = new TwitterPhoto(tw, twitterConfig),
-                ["img.ly"] = new imgly(tw, twitterConfig),
-                ["yfrog"] = new yfrog(tw, twitterConfig),
-                ["ついっぷるフォト"] = new TwipplePhoto(tw, twitterConfig),
                 ["Imgur"] = new Imgur(tw, twitterConfig),
                 ["Mobypicture"] = new Mobypicture(tw, twitterConfig),
             };
@@ -385,7 +382,6 @@ namespace OpenTween
                 MessageBox.Show(Properties.Resources.PostPictureWarn1, Properties.Resources.PostPictureWarn2);
             }
 
-            EndSelection();
             imageService = null;
             mediaItems = null;
             return false;
@@ -662,7 +658,10 @@ namespace OpenTween
             else
             {
                 idx = ImageServiceCombo.Items.IndexOf(svc);
-                if (idx == -1) idx = index ?? 0;
+
+                // svc が空白以外かつ存在しないサービス名の場合は Twitter を選択させる
+                // (廃止されたサービスを選択していた場合の対応)
+                if (idx == -1) idx = 0;
             }
 
             try

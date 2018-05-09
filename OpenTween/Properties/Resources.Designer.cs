@@ -19,7 +19,7 @@ namespace OpenTween.Properties {
     // または Visual Studio のようなツールを使用して自動生成されました。
     // メンバーを追加または削除するには、.ResX ファイルを編集して、/str オプションと共に
     // ResGen を実行し直すか、または VS プロジェクトをビルドし直します。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -652,19 +652,18 @@ namespace OpenTween.Properties {
         /// <summary>
         ///   更新履歴
         ///
-        ///==== Ver 1.3.9-dev(2017/xx/xx)
+        ///==== Ver 1.4.2-dev(xxxx/xx/xx)
         ///
-        ///==== Ver 1.3.8(2017/06/05)
-        /// * NEW: bit.ly の認証方式が変更されました
-        ///  - 短縮URLに bit.ly を使用する場合は、設定画面の「短縮URL」から bit.ly の「認可」ボタンを押して認証情報を入力して下さい
-        /// * CHG: 管理者権限での実行時に表示される警告(v1.3.7で追加)を、UACが無効化された環境では表示しないように変更しました
-        ///  - この変更はUACの無効化を推奨するものではありません
-        /// * FIX: Microsoft DataMarket廃止により翻訳機能が使用できなくなった不具合を修正
-        /// * FIX: DMの送信後に「OK:Delaying?」の警告が表示される不具合を修正 (thx @o_keiichi!)
-        ///
-        ///==== Ver 1.3.7(2017/03/20)
-        /// * NEW: PNG画像のアップロード時にJPEGへの変換による劣化を回避する機能を追加しました (pic.twitter.com のみ)
-        ///  - 設定画面の 動作→投稿 [残りの文字列は切り詰められました]&quot;; に類似しているローカライズされた文字列を検索します。
+        ///==== Ver 1.4.1(2017/11/12)
+        /// * NEW: ツイート文字数の280文字への上限緩和に対応しました
+        ///  - Twitter公式クライアントなどと同様に、入力する文字種によって文字数の扱いが異なるものになります
+        ///  - DMの送信時に行われる文字数のカウントは従来通りのままです
+        /// * NEW: 投稿欄に入力されたリプライと引用ツイートのURLが文字数カウントから除外されます
+        ///  - ツイートへの返信で入力された「@... 」や、引用ツイートのために入力されたツイートURLが240文字のカウントに含まれなくなります
+        ///  - リプライ以外で入力された、またはツイートの先頭以外に含まれる「@... 」は従来通り文字数のカウントに含まれます
+        ///  - ツイートURLについては、文末以外に入力した場合または画像投稿と組み合わせて投稿する場合には従来通り文字数のカウントに含まれます
+        /// * NEW: プロフィール編集時に名前欄に50文字のテキストが入力可能になりました
+        /// * CHG: 画像投稿の対応サー [残りの文字列は切り詰められました]&quot;; に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string ChangeLog {
             get {

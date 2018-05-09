@@ -133,6 +133,15 @@ namespace OpenTween
         public static readonly Regex StatusUrlRegex = new Regex(@"https?://([^.]+\.)?twitter\.com/(#!/)?(?<ScreenName>[a-zA-Z0-9_]+)/status(es)?/(?<StatusId>[0-9]+)(/photo)?", RegexOptions.IgnoreCase);
 
         /// <summary>
+        /// attachment_url に指定可能な URL を判定する正規表現
+        /// </summary>
+        public static readonly Regex AttachmentUrlRegex = new Regex(@"https?://(
+   twitter\.com/[0-9A-Za-z_]+/status/[0-9]+
+ | mobile\.twitter\.com/[0-9A-Za-z_]+/status/[0-9]+
+ | twitter\.com/messages/compose\?recipient_id=[0-9]+(&.+)?
+)$", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+
+        /// <summary>
         /// FavstarやaclogなどTwitter関連サービスのパーマリンクURLからステータスIDを抽出する正規表現
         /// </summary>
         public static readonly Regex ThirdPartyStatusUrlRegex = new Regex(@"https?://(?:[^.]+\.)?(?:
@@ -149,6 +158,7 @@ namespace OpenTween
 
         public TwitterApi Api { get; }
         public TwitterConfiguration Configuration { get; private set; }
+        public TwitterTextConfiguration TextConfiguration { get; private set; }
 
         delegate void GetIconImageDelegate(PostClass post);
         private readonly object LockObj = new object();
@@ -181,6 +191,7 @@ namespace OpenTween
         {
             this.Api = api;
             this.Configuration = TwitterConfiguration.DefaultConfiguration();
+            this.TextConfiguration = TwitterTextConfiguration.DefaultConfiguration();
         }
 
         public TwitterApiAccessLevel AccessLevel
@@ -276,18 +287,19 @@ namespace OpenTween
             return orgData;
         }
 
-        public async Task PostStatus(string postStr, long? reply_to, IReadOnlyList<long> mediaIds = null)
+        public async Task PostStatus(PostStatusParams param)
         {
             this.CheckAccountState();
 
-            if (Twitter.DMSendTextRegex.IsMatch(postStr))
+            if (Twitter.DMSendTextRegex.IsMatch(param.Text))
             {
-                await this.SendDirectMessage(postStr)
+                await this.SendDirectMessage(param.Text)
                     .ConfigureAwait(false);
                 return;
             }
 
-            var response = await this.Api.StatusesUpdate(postStr, reply_to, mediaIds)
+            var response = await this.Api.StatusesUpdate(param.Text, param.InReplyToStatusId, param.MediaIds,
+                    param.AutoPopulateReplyMetadata, param.ExcludeReplyUserIds, param.AttachmentUrl)
                 .ConfigureAwait(false);
 
             var status = await response.LoadJsonAsync()
@@ -601,8 +613,7 @@ namespace OpenTween
             }
 
             var minimumId = this.CreatePostsFromJson(statuses, MyCommon.WORKERTYPE.Timeline, tab, read);
-
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -625,8 +636,7 @@ namespace OpenTween
             }
 
             var minimumId = this.CreatePostsFromJson(statuses, MyCommon.WORKERTYPE.Reply, tab, read);
-
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -661,7 +671,7 @@ namespace OpenTween
 
             var minimumId = CreatePostsFromJson(statuses, MyCommon.WORKERTYPE.UserTimeline, tab, read);
 
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -844,7 +854,7 @@ namespace OpenTween
             post.Source = string.Intern(sourceText);
             post.SourceUri = sourceUri;
 
-            post.IsReply = post.ReplyToList.Contains(_uname);
+            post.IsReply = post.RetweetedId == null && post.ReplyToList.Any(x => x.Item1 == this.UserId);
             post.IsExcludeReply = false;
 
             if (post.IsMe)
@@ -994,7 +1004,7 @@ namespace OpenTween
 
             var minimumId = CreatePostsFromJson(statuses, MyCommon.WORKERTYPE.List, tab, read);
 
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -1136,7 +1146,7 @@ namespace OpenTween
 
             var minimumId = this.CreatePostsFromSearchJson(searchResult, tab, read, more);
 
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -1312,7 +1322,7 @@ namespace OpenTween
 
             var minimumId = this.CreateFavoritePostsFromJson(statuses, read);
 
-            if (minimumId != null && minimumId.Value < tab.OldestId)
+            if (minimumId != null)
                 tab.OldestId = minimumId.Value;
         }
 
@@ -1447,6 +1457,9 @@ namespace OpenTween
         {
             this.Configuration = await this.Api.Configuration()
                 .ConfigureAwait(false);
+
+            // TextConfiguration 相当の JSON を得る API が存在しないため、TransformedURLLength のみ help/configuration.json に合わせて更新する
+            this.TextConfiguration.TransformedURLLength = this.Configuration.ShortUrlLengthHttps;
         }
 
         public async Task GetListsApi()
@@ -1533,7 +1546,7 @@ namespace OpenTween
             }
         }
 
-        public string CreateHtmlAnchor(string text, List<string> AtList, TwitterEntities entities, List<MediaInfo> media)
+        public string CreateHtmlAnchor(string text, List<Tuple<long, string>> AtList, TwitterEntities entities, List<MediaInfo> media)
         {
             if (entities != null)
             {
@@ -1548,9 +1561,7 @@ namespace OpenTween
                 {
                     foreach (var ent in entities.UserMentions)
                     {
-                        var screenName = ent.ScreenName.ToLowerInvariant();
-                        if (!AtList.Contains(screenName))
-                            AtList.Add(screenName);
+                        AtList.Add(Tuple.Create(ent.Id, ent.ScreenName));
                     }
                 }
                 if (entities.Media != null)
@@ -1710,12 +1721,12 @@ namespace OpenTween
         {
             var matchDm = Twitter.DMSendTextRegex.Match(postText);
             if (matchDm.Success)
-                return this.GetTextLengthRemainInternal(matchDm.Groups["body"].Value, isDm: true);
+                return this.GetTextLengthRemainDM(matchDm.Groups["body"].Value);
 
-            return this.GetTextLengthRemainInternal(postText, isDm: false);
+            return this.GetTextLengthRemainWeighted(postText);
         }
 
-        private int GetTextLengthRemainInternal(string postText, bool isDm)
+        private int GetTextLengthRemainDM(string postText)
         {
             var textLength = 0;
 
@@ -1740,10 +1751,54 @@ namespace OpenTween
                 textLength += shortUrlLength - url.Length;
             }
 
-            if (isDm)
-                return this.Configuration.DmTextCharacterLimit - textLength;
-            else
-                return 140 - textLength;
+            return this.Configuration.DmTextCharacterLimit - textLength;
+        }
+
+        private int GetTextLengthRemainWeighted(string postText)
+        {
+            var config = this.TextConfiguration;
+            var totalWeight = 0;
+
+            var urls = TweetExtractor.ExtractUrlEntities(postText).ToArray();
+
+            var pos = 0;
+            while (pos < postText.Length)
+            {
+                var urlEntity = urls.FirstOrDefault(x => x.Indices[0] == pos);
+                if (urlEntity != null)
+                {
+                    totalWeight += config.TransformedURLLength * config.Scale;
+
+                    var urlLength = urlEntity.Indices[1] - urlEntity.Indices[0];
+                    pos += urlLength;
+
+                    continue;
+                }
+
+                var codepoint = postText.GetCodepointAtSafe(pos);
+                var weight = config.DefaultWeight;
+
+                foreach (var weightRange in config.Ranges)
+                {
+                    if (codepoint >= weightRange.Start && codepoint <= weightRange.End)
+                    {
+                        weight = weightRange.Weight;
+                        break;
+                    }
+                }
+
+                totalWeight += weight;
+
+                var isSurrogatePair = codepoint > 0xffff;
+                if (isSurrogatePair)
+                    pos += 2; // サロゲートペアの場合は2文字分進める
+                else
+                    pos++;
+            }
+
+            var remainWeight = config.MaxWeightedTweetLength * config.Scale - totalWeight;
+
+            return remainWeight / config.Scale;
         }
 
 

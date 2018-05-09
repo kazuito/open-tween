@@ -84,6 +84,7 @@
     <Compile Include="Api\DataModel\TwitterSearchResult.cs" />
     <Compile Include="Api\DataModel\TwitterStatus.cs" />
     <Compile Include="Api\DataModel\TwitterStreamEvent.cs" />
+    <Compile Include="Api\DataModel\TwitterTextConfiguration.cs" />
     <Compile Include="Api\DataModel\TwitterUploadMediaResult.cs" />
     <Compile Include="Api\DataModel\TwitterUser.cs" />
     <Compile Include="Api\DataModel\TwitterApiAccessLevel.cs" />
@@ -116,7 +117,6 @@
     <Compile Include="Bing.cs" />
     <Compile Include="Connection\IApiConnection.cs" />
     <Compile Include="Connection\IMediaUploadService.cs" />
-    <Compile Include="Connection\imgly.cs" />
     <Compile Include="Connection\Imgur.cs" />
     <Compile Include="Connection\LazyJson.cs" />
     <Compile Include="Connection\Mobypicture.cs" />
@@ -124,7 +124,6 @@
     <Compile Include="Connection\OAuthEchoHandler.cs" />
     <Compile Include="Connection\OAuthHandler.cs" />
     <Compile Include="Connection\OAuthUtility.cs" />
-    <Compile Include="Connection\TwipplePhoto.cs" />
     <Compile Include="Connection\TwitterApiConnection.cs" />
     <Compile Include="EmojiFormatter.cs" />
     <Compile Include="EventViewerDialog.cs">
@@ -168,6 +167,7 @@
     <Compile Include="Models\UserTimelineTabModel.cs" />
     <Compile Include="MouseWheelMessageFilter.cs" />
     <Compile Include="NotifyPropertyChangedBase.cs" />
+    <Compile Include="PostStatusParams.cs" />
     <Compile Include="ReaderWriterLockTransaction.cs" />
     <Compile Include="SendErrorReportForm.cs">
       <SubType>Form</SubType>
@@ -234,7 +234,6 @@
       <DependentUpon>ListManage.cs</DependentUpon>
     </Compile>
     <Compile Include="Connection\TwitterPhoto.cs" />
-    <Compile Include="Connection\yfrog.cs" />
     <Compile Include="DetailsListView.cs">
       <SubType>Component</SubType>
     </Compile>

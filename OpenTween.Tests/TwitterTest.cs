@@ -55,6 +55,22 @@ namespace OpenTween
         }
 
         [Theory]
+        [InlineData("https://twitter.com/twitterapi/status/22634515958", true)]
+        [InlineData("http://twitter.com/twitterapi/status/22634515958", true)]
+        [InlineData("https://mobile.twitter.com/twitterapi/status/22634515958", true)]
+        [InlineData("http://mobile.twitter.com/twitterapi/status/22634515958", true)]
+        [InlineData("https://twitter.com/i/web/status/22634515958", false)]
+        [InlineData("https://twitter.com/imgazyobuzi/status/293333871171354624/photo/1", false)]
+        [InlineData("https://pic.twitter.com/gbxdb2Oj", false)]
+        [InlineData("https://twitter.com/messages/compose?recipient_id=514241801", true)]
+        [InlineData("http://twitter.com/messages/compose?recipient_id=514241801", true)]
+        [InlineData("https://twitter.com/messages/compose?recipient_id=514241801&text=%E3%81%BB%E3%81%92", true)]
+        public void AttachmentUrlRegexTest(string url, bool isMatch)
+        {
+            Assert.Equal(isMatch, Twitter.AttachmentUrlRegex.IsMatch(url));
+        }
+
+        [Theory]
         [InlineData("http://favstar.fm/users/twitterapi/status/22634515958", new[] { "22634515958" })]
         [InlineData("http://ja.favstar.fm/users/twitterapi/status/22634515958", new[] { "22634515958" })]
         [InlineData("http://favstar.fm/t/22634515958", new[] { "22634515958" })]
@@ -327,8 +343,8 @@ namespace OpenTween
         {
             using (var twitter = new Twitter())
             {
-                Assert.Equal(140, twitter.GetTextLengthRemain(""));
-                Assert.Equal(132, twitter.GetTextLengthRemain("hogehoge"));
+                Assert.Equal(280, twitter.GetTextLengthRemain(""));
+                Assert.Equal(272, twitter.GetTextLengthRemain("hogehoge"));
             }
         }
 
@@ -343,6 +359,13 @@ namespace OpenTween
 
                 Assert.Equal(10000, twitter.GetTextLengthRemain("D twitter "));
                 Assert.Equal(9992, twitter.GetTextLengthRemain("D twitter hogehoge"));
+
+                // t.co に短縮される分の文字数を考慮
+                twitter.Configuration.ShortUrlLength = 20;
+                Assert.Equal(9971, twitter.GetTextLengthRemain("D twitter hogehoge http://example.com/"));
+
+                twitter.Configuration.ShortUrlLengthHttps = 21;
+                Assert.Equal(9970, twitter.GetTextLengthRemain("D twitter hogehoge https://example.com/"));
             }
         }
 
@@ -352,15 +375,14 @@ namespace OpenTween
             using (var twitter = new Twitter())
             {
                 // t.co に短縮される分の文字数を考慮
-                twitter.Configuration.ShortUrlLength = 20;
-                Assert.Equal(120, twitter.GetTextLengthRemain("http://example.com/"));
-                Assert.Equal(120, twitter.GetTextLengthRemain("http://example.com/hogehoge"));
-                Assert.Equal(111, twitter.GetTextLengthRemain("hogehoge http://example.com/"));
+                twitter.TextConfiguration.TransformedURLLength = 20;
+                Assert.Equal(260, twitter.GetTextLengthRemain("http://example.com/"));
+                Assert.Equal(260, twitter.GetTextLengthRemain("http://example.com/hogehoge"));
+                Assert.Equal(251, twitter.GetTextLengthRemain("hogehoge http://example.com/"));
 
-                twitter.Configuration.ShortUrlLengthHttps = 21;
-                Assert.Equal(119, twitter.GetTextLengthRemain("https://example.com/"));
-                Assert.Equal(119, twitter.GetTextLengthRemain("https://example.com/hogehoge"));
-                Assert.Equal(110, twitter.GetTextLengthRemain("hogehoge https://example.com/"));
+                Assert.Equal(260, twitter.GetTextLengthRemain("https://example.com/"));
+                Assert.Equal(260, twitter.GetTextLengthRemain("https://example.com/hogehoge"));
+                Assert.Equal(251, twitter.GetTextLengthRemain("hogehoge https://example.com/"));
             }
         }
 
@@ -370,15 +392,15 @@ namespace OpenTween
             using (var twitter = new Twitter())
             {
                 // t.co に短縮される分の文字数を考慮
-                twitter.Configuration.ShortUrlLength = 20;
-                Assert.Equal(120, twitter.GetTextLengthRemain("example.com"));
-                Assert.Equal(120, twitter.GetTextLengthRemain("example.com/hogehoge"));
-                Assert.Equal(111, twitter.GetTextLengthRemain("hogehoge example.com"));
+                twitter.TextConfiguration.TransformedURLLength = 20;
+                Assert.Equal(260, twitter.GetTextLengthRemain("example.com"));
+                Assert.Equal(260, twitter.GetTextLengthRemain("example.com/hogehoge"));
+                Assert.Equal(251, twitter.GetTextLengthRemain("hogehoge example.com"));
 
                 // スキーム (http://) を省略かつ末尾が ccTLD の場合は t.co に短縮されない
-                Assert.Equal(130, twitter.GetTextLengthRemain("example.jp"));
+                Assert.Equal(270, twitter.GetTextLengthRemain("example.jp"));
                 // ただし、末尾にパスが続く場合は t.co に短縮される
-                Assert.Equal(120, twitter.GetTextLengthRemain("example.jp/hogehoge"));
+                Assert.Equal(260, twitter.GetTextLengthRemain("example.jp/hogehoge"));
             }
         }
 
@@ -387,8 +409,19 @@ namespace OpenTween
         {
             using (var twitter = new Twitter())
             {
-                Assert.Equal(139, twitter.GetTextLengthRemain("🍣"));
-                Assert.Equal(133, twitter.GetTextLengthRemain("🔥🐔🔥 焼き鳥"));
+                Assert.Equal(278, twitter.GetTextLengthRemain("🍣"));
+                Assert.Equal(267, twitter.GetTextLengthRemain("🔥🐔🔥 焼き鳥"));
+            }
+        }
+
+        [Fact]
+        public void GetTextLengthRemain_BrokenSurrogateTest()
+        {
+            using (var twitter = new Twitter())
+            {
+                // 投稿欄に IME から絵文字を入力すると HighSurrogate のみ入力された状態で TextChanged イベントが呼ばれることがある
+                Assert.Equal(278, twitter.GetTextLengthRemain("\ud83d"));
+                Assert.Equal(9999, twitter.GetTextLengthRemain("D twitter \ud83d"));
             }
         }
     }
