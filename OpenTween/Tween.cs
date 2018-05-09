@@ -11829,11 +11829,11 @@ namespace OpenTween
                 return;
             }
             var ev = e.EventData;
-            StatusEventLabel.Text = "[" + ev.CreatedAt.ToLongTimeString() + "] " + ev.Event + " by " + ev.Username;
-            //if (ev.Event == "favorite")
-            //{
-            //    NotifyFavorite(ev);
-            //}
+            // OpenTweenを起動しているユーザ以外からの通知のみ表示
+            if (!ev.Username.ToLowerInvariant().Equals(tw.Username.ToLowerInvariant()))
+            {
+                StatusEventLabel.Text = "[" + ev.CreatedAt.ToLongTimeString() + "] " + ev.Event + " by " + ev.Username;
+            }
             NotifyEvent(ev);
             if (ev.Event == "favorite" || ev.Event == "unfavorite")
             {
