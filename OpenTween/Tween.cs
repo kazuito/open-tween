@@ -822,11 +822,13 @@ namespace OpenTween
             // ここが Twitter API への最初のアクセスになるようにすること
             try
             {
-                this.tw.VerifyCredentials();
+                this.tw.VerifyCredentialsAsync().Wait();
+
             }
-            catch (WebApiException ex)
+            catch (AggregateException ex) when (ex.InnerException is WebApiException)
             {
-                MessageBox.Show(this, string.Format(Properties.Resources.StartupAuthError_Text, ex.Message),
+                string message = ex.InnerException.Message;
+                MessageBox.Show(this, string.Format(Properties.Resources.StartupAuthError_Text, message),
                     ApplicationSettings.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
@@ -11500,7 +11502,7 @@ namespace OpenTween
             // OpenTweenを起動しているユーザ以外からの通知のみ表示
             if (!ev.Username.ToLowerInvariant().Equals(tw.Username.ToLowerInvariant()))
             {
-                StatusEventLabel.Text = "[" + ev.CreatedAt.ToLongTimeString() + "] " + ev.Event + " by " + ev.Username;
+                StatusEventLabel.Text = "[" + ev.CreatedAt.ToLocalTimeString("H:mm:ss") + "] " + ev.Event + " by " + ev.Username;
             }
             NotifyEvent(ev);
             if (ev.Event == "favorite" || ev.Event == "unfavorite")
