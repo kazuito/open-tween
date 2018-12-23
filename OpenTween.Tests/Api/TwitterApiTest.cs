@@ -42,7 +42,7 @@ namespace OpenTween.Api
             this.MyCommonSetup();
         }
 
-        public void MyCommonSetup()
+        private void MyCommonSetup()
         {
             var mockAssembly = new Mock<_Assembly>();
             mockAssembly.Setup(m => m.GetName()).Returns(new AssemblyName("OpenTween"));
@@ -104,7 +104,7 @@ namespace OpenTween.Api
                         },
                         "/statuses/home_timeline")
                 )
-                .ReturnsAsync(new TwitterStatus[0]);
+                .ReturnsAsync(Array.Empty<TwitterStatus>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -134,7 +134,7 @@ namespace OpenTween.Api
                         },
                         "/statuses/mentions_timeline")
                 )
-                .ReturnsAsync(new TwitterStatus[0]);
+                .ReturnsAsync(Array.Empty<TwitterStatus>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -166,7 +166,7 @@ namespace OpenTween.Api
                         },
                         "/statuses/user_timeline")
                 )
-                .ReturnsAsync(new TwitterStatus[0]);
+                .ReturnsAsync(Array.Empty<TwitterStatus>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -261,7 +261,7 @@ namespace OpenTween.Api
 
                 twitterApi.apiConnection = mock.Object;
 
-                await twitterApi.StatusesUpdate("hogehoge", replyToId: null, mediaIds: null, excludeReplyUserIds: new long[0])
+                await twitterApi.StatusesUpdate("hogehoge", replyToId: null, mediaIds: null, excludeReplyUserIds: Array.Empty<long>())
                     .IgnoreResponse()
                     .ConfigureAwait(false);
 
@@ -536,7 +536,7 @@ namespace OpenTween.Api
                         },
                         "/lists/statuses")
                 )
-                .ReturnsAsync(new TwitterStatus[0]);
+                .ReturnsAsync(Array.Empty<TwitterStatus>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -664,29 +664,25 @@ namespace OpenTween.Api
         }
 
         [Fact]
-        public async Task DirectMessagesRecv_Test()
+        public async Task DirectMessagesEventsList_Test()
         {
             using (var twitterApi = new TwitterApi())
             {
                 var mock = new Mock<IApiConnection>();
                 mock.Setup(x =>
-                    x.GetAsync<TwitterDirectMessage[]>(
-                        new Uri("direct_messages.json", UriKind.Relative),
+                    x.GetAsync<TwitterMessageEventList>(
+                        new Uri("direct_messages/events/list.json", UriKind.Relative),
                         new Dictionary<string, string> {
-                            { "full_text", "true" },
-                            { "include_entities", "true" },
-                            { "include_ext_alt_text", "true" },
-                            { "count", "200" },
-                            { "max_id", "900" },
-                            { "since_id", "100" },
+                            { "count", "50" },
+                            { "cursor", "12345abcdefg" },
                         },
-                        "/direct_messages")
+                        "/direct_messages/events/list")
                 )
-                .ReturnsAsync(new TwitterDirectMessage[0]);
+                .ReturnsAsync(new TwitterMessageEventList());
 
                 twitterApi.apiConnection = mock.Object;
 
-                await twitterApi.DirectMessagesRecv(count: 200, maxId: 900L, sinceId: 100L)
+                await twitterApi.DirectMessagesEventsList(count: 50, cursor: "12345abcdefg")
                     .ConfigureAwait(false);
 
                 mock.VerifyAll();
@@ -694,29 +690,39 @@ namespace OpenTween.Api
         }
 
         [Fact]
-        public async Task DirectMessagesSent_Test()
+        public async Task DirectMessagesEventsNew_Test()
         {
             using (var twitterApi = new TwitterApi())
             {
                 var mock = new Mock<IApiConnection>();
                 mock.Setup(x =>
-                    x.GetAsync<TwitterDirectMessage[]>(
-                        new Uri("direct_messages/sent.json", UriKind.Relative),
-                        new Dictionary<string, string> {
-                            { "full_text", "true" },
-                            { "include_entities", "true" },
-                            { "include_ext_alt_text", "true" },
-                            { "count", "200" },
-                            { "max_id", "900" },
-                            { "since_id", "100" },
-                        },
-                        "/direct_messages/sent")
+                    x.PostJsonAsync(
+                        new Uri("direct_messages/events/new.json", UriKind.Relative),
+                        @"{
+  ""event"": {
+    ""type"": ""message_create"",
+    ""message_create"": {
+      ""target"": {
+        ""recipient_id"": ""12345""
+      },
+      ""message_data"": {
+        ""text"": ""hogehoge"",
+        ""attachment"": {
+          ""type"": ""media"",
+          ""media"": {
+            ""id"": ""67890""
+          }
+        }
+      }
+    }
+  }
+}")
                 )
-                .ReturnsAsync(new TwitterDirectMessage[0]);
+                .Returns(Task.CompletedTask);
 
                 twitterApi.apiConnection = mock.Object;
 
-                await twitterApi.DirectMessagesSent(count: 200, maxId: 900L, sinceId: 100L)
+                await twitterApi.DirectMessagesEventsNew(recipientId: 12345L, text: "hogehoge", mediaId: 67890L)
                     .ConfigureAwait(false);
 
                 mock.VerifyAll();
@@ -724,48 +730,20 @@ namespace OpenTween.Api
         }
 
         [Fact]
-        public async Task DirectMessagesNew_Test()
+        public async Task DirectMessagesEventsDestroy_Test()
         {
             using (var twitterApi = new TwitterApi())
             {
                 var mock = new Mock<IApiConnection>();
                 mock.Setup(x =>
-                    x.PostLazyAsync<TwitterDirectMessage>(
-                        new Uri("direct_messages/new.json", UriKind.Relative),
-                        new Dictionary<string, string> {
-                            { "text", "hogehoge" },
-                            { "screen_name", "opentween" },
-                        })
+                    x.DeleteAsync(
+                        new Uri("direct_messages/events/destroy.json?id=100", UriKind.Relative))
                 )
-                .ReturnsAsync(LazyJson.Create(new TwitterDirectMessage()));
+                .Returns(Task.CompletedTask);
 
                 twitterApi.apiConnection = mock.Object;
 
-                await twitterApi.DirectMessagesNew("hogehoge", "opentween")
-                    .IgnoreResponse()
-                    .ConfigureAwait(false);
-
-                mock.VerifyAll();
-            }
-        }
-
-        [Fact]
-        public async Task DirectMessagesDestroy_Test()
-        {
-            using (var twitterApi = new TwitterApi())
-            {
-                var mock = new Mock<IApiConnection>();
-                mock.Setup(x =>
-                    x.PostLazyAsync<TwitterDirectMessage>(
-                        new Uri("direct_messages/destroy.json", UriKind.Relative),
-                        new Dictionary<string, string> { { "id", "100" } })
-                )
-                .ReturnsAsync(LazyJson.Create(new TwitterDirectMessage { Id = 100L }));
-
-                twitterApi.apiConnection = mock.Object;
-
-                await twitterApi.DirectMessagesDestroy(statusId: 100L)
-                    .IgnoreResponse()
+                await twitterApi.DirectMessagesEventsDestroy(eventId: "100")
                     .ConfigureAwait(false);
 
                 mock.VerifyAll();
@@ -794,6 +772,34 @@ namespace OpenTween.Api
                 twitterApi.apiConnection = mock.Object;
 
                 await twitterApi.UsersShow(screenName: "twitterapi")
+                    .ConfigureAwait(false);
+
+                mock.VerifyAll();
+            }
+        }
+
+        [Fact]
+        public async Task UsersLookup_Test()
+        {
+            using (var twitterApi = new TwitterApi())
+            {
+                var mock = new Mock<IApiConnection>();
+                mock.Setup(x =>
+                    x.GetAsync<TwitterUser[]>(
+                        new Uri("users/lookup.json", UriKind.Relative),
+                        new Dictionary<string, string> {
+                            { "user_id", "11111,22222" },
+                            { "include_entities", "true" },
+                            { "include_ext_alt_text", "true" },
+                            { "tweet_mode", "extended" },
+                        },
+                        "/users/lookup")
+                )
+                .ReturnsAsync(Array.Empty<TwitterUser>());
+
+                twitterApi.apiConnection = mock.Object;
+
+                await twitterApi.UsersLookup(userIds: new[] { "11111", "22222" })
                     .ConfigureAwait(false);
 
                 mock.VerifyAll();
@@ -845,7 +851,7 @@ namespace OpenTween.Api
                         },
                         "/favorites/list")
                 )
-                .ReturnsAsync(new TwitterStatus[0]);
+                .ReturnsAsync(Array.Empty<TwitterStatus>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -989,7 +995,7 @@ namespace OpenTween.Api
                         null,
                         "/friendships/no_retweets/ids")
                 )
-                .ReturnsAsync(new long[0]);
+                .ReturnsAsync(Array.Empty<long>());
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -1262,7 +1268,35 @@ namespace OpenTween.Api
         }
 
         [Fact]
-        public async Task MediaUpload_Test()
+        public async Task MediaUploadInit_Test()
+        {
+            using (var twitterApi = new TwitterApi())
+            {
+                var mock = new Mock<IApiConnection>();
+                mock.Setup(x =>
+                    x.PostLazyAsync<TwitterUploadMediaInit>(
+                        new Uri("https://upload.twitter.com/1.1/media/upload.json", UriKind.Absolute),
+                        new Dictionary<string, string> {
+                            { "command", "INIT" },
+                            { "total_bytes", "123456" },
+                            { "media_type", "image/png" },
+                            { "media_category", "dm_image" },
+                        })
+                )
+                .ReturnsAsync(LazyJson.Create(new TwitterUploadMediaInit()));
+
+                twitterApi.apiConnection = mock.Object;
+
+                await twitterApi.MediaUploadInit(totalBytes: 123456L, mediaType: "image/png", mediaCategory: "dm_image")
+                    .IgnoreResponse()
+                    .ConfigureAwait(false);
+
+                mock.VerifyAll();
+            }
+        }
+
+        [Fact]
+        public async Task MediaUploadAppend_Test()
         {
             using (var twitterApi = new TwitterApi())
             using (var image = TestUtils.CreateDummyImage())
@@ -1270,17 +1304,72 @@ namespace OpenTween.Api
             {
                 var mock = new Mock<IApiConnection>();
                 mock.Setup(x =>
+                    x.PostAsync(
+                        new Uri("https://upload.twitter.com/1.1/media/upload.json", UriKind.Absolute),
+                        new Dictionary<string, string> {
+                            { "command", "APPEND" },
+                            { "media_id", "11111" },
+                            { "segment_index", "1" },
+                        },
+                        new Dictionary<string, IMediaItem> { { "media", media } })
+                )
+                .Returns(Task.CompletedTask);
+
+                twitterApi.apiConnection = mock.Object;
+
+                await twitterApi.MediaUploadAppend(mediaId: 11111L, segmentIndex: 1, media: media)
+                    .ConfigureAwait(false);
+
+                mock.VerifyAll();
+            }
+        }
+
+        [Fact]
+        public async Task MediaUploadFinalize_Test()
+        {
+            using (var twitterApi = new TwitterApi())
+            {
+                var mock = new Mock<IApiConnection>();
+                mock.Setup(x =>
                     x.PostLazyAsync<TwitterUploadMediaResult>(
                         new Uri("https://upload.twitter.com/1.1/media/upload.json", UriKind.Absolute),
-                        null,
-                        new Dictionary<string, IMediaItem> { { "media", media } })
+                        new Dictionary<string, string> {
+                            { "command", "FINALIZE" },
+                            { "media_id", "11111" },
+                        })
                 )
                 .ReturnsAsync(LazyJson.Create(new TwitterUploadMediaResult()));
 
                 twitterApi.apiConnection = mock.Object;
 
-                await twitterApi.MediaUpload(media)
+                await twitterApi.MediaUploadFinalize(mediaId: 11111L)
                     .IgnoreResponse()
+                    .ConfigureAwait(false);
+
+                mock.VerifyAll();
+            }
+        }
+
+        [Fact]
+        public async Task MediaUploadStatus_Test()
+        {
+            using (var twitterApi = new TwitterApi())
+            {
+                var mock = new Mock<IApiConnection>();
+                mock.Setup(x =>
+                    x.GetAsync<TwitterUploadMediaResult>(
+                        new Uri("https://upload.twitter.com/1.1/media/upload.json", UriKind.Absolute),
+                        new Dictionary<string, string> {
+                            { "command", "STATUS" },
+                            { "media_id", "11111" },
+                        },
+                        null)
+                )
+                .ReturnsAsync(new TwitterUploadMediaResult());
+
+                twitterApi.apiConnection = mock.Object;
+
+                await twitterApi.MediaUploadStatus(mediaId: 11111L)
                     .ConfigureAwait(false);
 
                 mock.VerifyAll();
@@ -1298,7 +1387,7 @@ namespace OpenTween.Api
                         new Uri("https://upload.twitter.com/1.1/media/metadata/create.json", UriKind.Absolute),
                         "{\"media_id\": \"12345\", \"alt_text\": {\"text\": \"hogehoge\"}}")
                 )
-                .Returns(Task.FromResult(0));
+                .Returns(Task.CompletedTask);
 
                 twitterApi.apiConnection = mock.Object;
 
@@ -1327,10 +1416,8 @@ namespace OpenTween.Api
 
                 twitterApi.apiConnection = mock.Object;
 
-                var stream = await twitterApi.UserStreams(replies: "all", track: "OpenTween")
-                    .ConfigureAwait(false);
-
-                stream.Dispose();
+                var observable = twitterApi.UserStreams(replies: "all", track: "OpenTween");
+                await observable.ForEachAsync(x => { });
 
                 mock.VerifyAll();
             }

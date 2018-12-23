@@ -110,6 +110,216 @@ namespace OpenTween
         }
 
         [Fact]
+        public void CreateAccessibleText_MediaAltTest()
+        {
+            var text = "https://t.co/hoge";
+            var entities = new TwitterEntities
+            {
+                Media = new[]
+                {
+                    new TwitterEntityMedia
+                    {
+                        Indices = new[] { 0, 17 },
+                        Url = "https://t.co/hoge",
+                        DisplayUrl = "pic.twitter.com/hoge",
+                        ExpandedUrl = "https://twitter.com/hoge/status/1234567890/photo/1",
+                        AltText = "代替テキスト",
+                    },
+                },
+            };
+
+            var expectedText = string.Format(Properties.Resources.ImageAltText, "代替テキスト");
+
+            Assert.Equal(expectedText, Twitter.CreateAccessibleText(text, entities, quotedStatus: null, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateAccessibleText_MediaNoAltTest()
+        {
+            var text = "https://t.co/hoge";
+            var entities = new TwitterEntities
+            {
+                Media = new[]
+                {
+                    new TwitterEntityMedia
+                    {
+                        Indices = new[] { 0, 17 },
+                        Url = "https://t.co/hoge",
+                        DisplayUrl = "pic.twitter.com/hoge",
+                        ExpandedUrl = "https://twitter.com/hoge/status/1234567890/photo/1",
+                        AltText = null,
+                    },
+                },
+            };
+
+            var expectedText = "pic.twitter.com/hoge";
+
+            Assert.Equal(expectedText, Twitter.CreateAccessibleText(text, entities, quotedStatus: null, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateAccessibleText_QuotedUrlTest()
+        {
+            var text = "https://t.co/hoge";
+            var entities = new TwitterEntities
+            {
+                Urls = new[]
+                {
+                    new TwitterEntityUrl
+                    {
+                        Indices = new[] { 0, 17 },
+                        Url = "https://t.co/hoge",
+                        DisplayUrl = "twitter.com/hoge/status/1…",
+                        ExpandedUrl = "https://twitter.com/hoge/status/1234567890",
+                    },
+                },
+            };
+            var quotedStatus = new TwitterStatus
+            {
+                Id = 1234567890L,
+                IdStr = "1234567890",
+                User = new TwitterUser
+                {
+                    Id = 1111,
+                    IdStr = "1111",
+                    ScreenName = "foo",
+                },
+                FullText = "test",
+            };
+
+            var expectedText = string.Format(Properties.Resources.QuoteStatus_AccessibleText, "foo", "test");
+
+            Assert.Equal(expectedText, Twitter.CreateAccessibleText(text, entities, quotedStatus, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateAccessibleText_QuotedUrlWithPermelinkTest()
+        {
+            var text = "hoge";
+            var entities = new TwitterEntities();
+            var quotedStatus = new TwitterStatus
+            {
+                Id = 1234567890L,
+                IdStr = "1234567890",
+                User = new TwitterUser
+                {
+                    Id = 1111,
+                    IdStr = "1111",
+                    ScreenName = "foo",
+                },
+                FullText = "test",
+            };
+            var quotedStatusLink = new TwitterQuotedStatusPermalink
+            {
+                Url = "https://t.co/hoge",
+                Display = "twitter.com/hoge/status/1…",
+                Expanded = "https://twitter.com/hoge/status/1234567890",
+            };
+
+            var expectedText = "hoge " + string.Format(Properties.Resources.QuoteStatus_AccessibleText, "foo", "test");
+
+            Assert.Equal(expectedText, Twitter.CreateAccessibleText(text, entities, quotedStatus, quotedStatusLink));
+        }
+
+        [Fact]
+        public void CreateAccessibleText_QuotedUrlNoReferenceTest()
+        {
+            var text = "https://t.co/hoge";
+            var entities = new TwitterEntities
+            {
+                Urls = new[]
+                {
+                    new TwitterEntityUrl
+                    {
+                        Indices = new[] { 0, 17 },
+                        Url = "https://t.co/hoge",
+                        DisplayUrl = "twitter.com/hoge/status/1…",
+                        ExpandedUrl = "https://twitter.com/hoge/status/1234567890",
+                    },
+                },
+            };
+            var quotedStatus = (TwitterStatus)null;
+
+            var expectedText = "twitter.com/hoge/status/1…";
+
+            Assert.Equal(expectedText, Twitter.CreateAccessibleText(text, entities, quotedStatus, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateHtmlAnchor_Test()
+        {
+            var text = "@twitterapi #BreakingMyTwitter https://t.co/mIJcSoVSK3";
+            var entities = new TwitterEntities
+            {
+                UserMentions = new[]
+                {
+                    new TwitterEntityMention { Indices = new[] { 0, 11 }, ScreenName = "twitterapi" },
+                },
+                Hashtags = new[]
+                {
+                    new TwitterEntityHashtag { Indices = new[] { 12, 30 }, Text = "BreakingMyTwitter" },
+                },
+                Urls = new[]
+                {
+                    new TwitterEntityUrl
+                    {
+                        Indices = new[] { 31, 54 },
+                        Url ="https://t.co/mIJcSoVSK3",
+                        DisplayUrl = "apps-of-a-feather.com",
+                        ExpandedUrl = "http://apps-of-a-feather.com/",
+                    },
+                },
+            };
+
+            var expectedHtml = @"<a class=""mention"" href=""https://twitter.com/twitterapi"">@twitterapi</a>"
+                + @" <a class=""hashtag"" href=""https://twitter.com/search?q=%23BreakingMyTwitter"">#BreakingMyTwitter</a>"
+                + @" <a href=""https://t.co/mIJcSoVSK3"" title=""https://t.co/mIJcSoVSK3"">apps-of-a-feather.com</a>";
+
+            Assert.Equal(expectedHtml, Twitter.CreateHtmlAnchor(text, entities, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateHtmlAnchor_NicovideoTest()
+        {
+            var text = "sm9";
+            var entities = new TwitterEntities();
+
+            var expectedHtml = @"<a href=""http://www.nicovideo.jp/watch/sm9"">sm9</a>";
+
+            Assert.Equal(expectedHtml, Twitter.CreateHtmlAnchor(text, entities, quotedStatusLink: null));
+        }
+
+        [Fact]
+        public void CreateHtmlAnchor_QuotedUrlWithPermelinkTest()
+        {
+            var text = "hoge";
+            var entities = new TwitterEntities();
+            var quotedStatus = new TwitterStatus
+            {
+                Id = 1234567890L,
+                IdStr = "1234567890",
+                User = new TwitterUser
+                {
+                    Id = 1111,
+                    IdStr = "1111",
+                    ScreenName = "foo",
+                },
+                FullText = "test",
+            };
+            var quotedStatusLink = new TwitterQuotedStatusPermalink
+            {
+                Url = "https://t.co/hoge",
+                Display = "twitter.com/hoge/status/1…",
+                Expanded = "https://twitter.com/hoge/status/1234567890",
+            };
+
+            var expectedHtml = @"hoge"
+                + @" <a href=""https://t.co/hoge"" title=""https://t.co/hoge"">twitter.com/hoge/status/1…</a>";
+
+            Assert.Equal(expectedHtml, Twitter.CreateHtmlAnchor(text, entities, quotedStatusLink));
+        }
+
+        [Fact]
         public void ParseSource_Test()
         {
             var sourceHtml = "<a href=\"http://twitter.com\" rel=\"nofollow\">Twitter Web Client</a>";
@@ -186,7 +396,21 @@ namespace OpenTween
                 },
             };
 
-            var statusIds = Twitter.GetQuoteTweetStatusIds(entities);
+            var statusIds = Twitter.GetQuoteTweetStatusIds(entities, quotedStatusLink: null);
+            Assert.Equal(new[] { 599261132361072640L }, statusIds);
+        }
+
+        [Fact]
+        public void GetQuoteTweetStatusIds_QuotedStatusLinkTest()
+        {
+            var entities = new TwitterEntities();
+            var quotedStatusLink = new TwitterQuotedStatusPermalink
+            {
+                Url = "https://t.co/3HXq0LrbJb",
+                Expanded = "https://twitter.com/kim_upsilon/status/599261132361072640",
+            };
+
+            var statusIds = Twitter.GetQuoteTweetStatusIds(entities, quotedStatusLink);
             Assert.Equal(new[] { 599261132361072640L }, statusIds);
         }
 
@@ -223,7 +447,6 @@ namespace OpenTween
 
             var timeline = SettingManager.Common.CountApi;
             var reply = SettingManager.Common.CountApiReply;
-            var dm = 20;  // DMは固定値
             var more = SettingManager.Common.MoreCountApi;
             var startup = SettingManager.Common.FirstCountApi;
             var favorite = SettingManager.Common.FavoritesCountApi;
@@ -232,7 +455,7 @@ namespace OpenTween
             var usertl = SettingManager.Common.UserTimelineCountApi;
 
             // デフォルト値チェック
-            Assert.Equal(false, SettingManager.Common.UseAdditionalCount);
+            Assert.False(SettingManager.Common.UseAdditionalCount);
             Assert.Equal(60, timeline);
             Assert.Equal(40, reply);
             Assert.Equal(200, more);
@@ -245,10 +468,6 @@ namespace OpenTween
             // Timeline,Reply
             Assert.Equal(timeline, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Timeline, false, false));
             Assert.Equal(reply, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Reply, false, false));
-
-            // DM
-            Assert.Equal(dm, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.DirectMessegeRcv, false, false));
-            Assert.Equal(dm, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.DirectMessegeSnt, false, false));
 
             // その他はTimelineと同値になる
             Assert.Equal(timeline, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Favorites, false, false));
@@ -267,7 +486,6 @@ namespace OpenTween
 
             var timeline = SettingManager.Common.CountApi;
             var reply = SettingManager.Common.CountApiReply;
-            var dm = 20;  // DMは固定値
             var more = SettingManager.Common.MoreCountApi;
             var startup = SettingManager.Common.FirstCountApi;
             var favorite = SettingManager.Common.FavoritesCountApi;
@@ -286,10 +504,6 @@ namespace OpenTween
             Assert.Equal(reply, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Reply, false, false));
             Assert.Equal(more, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Reply, true, false));
             Assert.Equal(reply, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Reply, false, true));  //Replyの値が使われる
-
-            // DM
-            Assert.Equal(dm, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.DirectMessegeRcv, false, false));
-            Assert.Equal(dm, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.DirectMessegeSnt, false, false));
 
             // Favorites
             Assert.Equal(favorite, Twitter.GetApiResultCount(MyCommon.WORKERTYPE.Favorites, false, false));
@@ -411,6 +625,26 @@ namespace OpenTween
             {
                 Assert.Equal(278, twitter.GetTextLengthRemain("🍣"));
                 Assert.Equal(267, twitter.GetTextLengthRemain("🔥🐔🔥 焼き鳥"));
+            }
+        }
+
+        [Fact]
+        public void GetTextLengthRemain_EmojiTest()
+        {
+            using (var twitter = new Twitter())
+            {
+                // 絵文字の文字数カウントの仕様変更に対するテストケース
+                // https://twittercommunity.com/t/114607
+
+                Assert.Equal(279, twitter.GetTextLengthRemain("©")); // 基本多言語面の絵文字
+                Assert.Equal(277, twitter.GetTextLengthRemain("©\uFE0E")); // 異字体セレクタ付き (text style)
+                Assert.Equal(279, twitter.GetTextLengthRemain("©\uFE0F")); // 異字体セレクタ付き (emoji style)
+                Assert.Equal(278, twitter.GetTextLengthRemain("🍣")); // 拡張面の絵文字
+                Assert.Equal(279, twitter.GetTextLengthRemain("#⃣")); // 合字で表現される絵文字
+                Assert.Equal(278, twitter.GetTextLengthRemain("👦\U0001F3FF")); // Emoji modifier 付きの絵文字
+                Assert.Equal(278, twitter.GetTextLengthRemain("\U0001F3FF")); // Emoji modifier 単体
+                Assert.Equal(278, twitter.GetTextLengthRemain("👨\u200D🎨")); // ZWJ で結合された絵文字
+                Assert.Equal(278, twitter.GetTextLengthRemain("🏃\u200D♀\uFE0F")); // ZWJ と異字体セレクタを含む絵文字
             }
         }
 

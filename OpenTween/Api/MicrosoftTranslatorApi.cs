@@ -39,7 +39,7 @@ namespace OpenTween.Api
         public static readonly Uri TranslateEndpoint = new Uri("https://api.microsofttranslator.com/v2/Http.svc/Translate");
 
         public string AccessToken { get; internal set; }
-        public DateTime RefreshAccessTokenAt { get; internal set; }
+        public DateTimeUtc RefreshAccessTokenAt { get; internal set; }
 
         private HttpClient Http => this.localHttpClient ?? Networking.Http;
         private readonly HttpClient localHttpClient;
@@ -50,9 +50,7 @@ namespace OpenTween.Api
         }
 
         public MicrosoftTranslatorApi(HttpClient http)
-        {
-            this.localHttpClient = http;
-        }
+            => this.localHttpClient = http;
 
         public async Task<string> TranslateAsync(string text, string langTo, string langFrom = null)
         {
@@ -84,7 +82,7 @@ namespace OpenTween.Api
 
         public async Task UpdateAccessTokenIfExpired()
         {
-            if (this.AccessToken != null && this.RefreshAccessTokenAt > DateTime.Now)
+            if (this.AccessToken != null && this.RefreshAccessTokenAt > DateTimeUtc.Now)
                 return;
 
             var (accessToken, expiresIn) = await this.GetAccessTokenAsync()
@@ -93,7 +91,7 @@ namespace OpenTween.Api
             this.AccessToken = accessToken;
 
             // アクセストークンの実際の有効期限より 30 秒早めに失効として扱う
-            this.RefreshAccessTokenAt = DateTime.Now + expiresIn - TimeSpan.FromSeconds(30);
+            this.RefreshAccessTokenAt = DateTimeUtc.Now + expiresIn - TimeSpan.FromSeconds(30);
         }
 
         internal virtual async Task<(string AccessToken, TimeSpan ExpiresIn)> GetAccessTokenAsync()

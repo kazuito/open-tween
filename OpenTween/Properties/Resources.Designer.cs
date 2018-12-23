@@ -47,7 +47,7 @@ namespace OpenTween.Properties {
         }
         
         /// <summary>
-        ///   厳密に型指定されたこのリソース クラスを使用して、すべての検索リソースに対し、
+        ///   すべてについて、現在のスレッドの CurrentUICulture プロパティをオーバーライドします
         ///   現在のスレッドの CurrentUICulture プロパティをオーバーライドします。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -652,18 +652,20 @@ namespace OpenTween.Properties {
         /// <summary>
         ///   更新履歴
         ///
-        ///==== Ver 1.4.2-dev(xxxx/xx/xx)
+        ///==== Ver 2.2.1-dev(20xx/xx/xx)
         ///
-        ///==== Ver 1.4.1(2017/11/12)
-        /// * NEW: ツイート文字数の280文字への上限緩和に対応しました
-        ///  - Twitter公式クライアントなどと同様に、入力する文字種によって文字数の扱いが異なるものになります
-        ///  - DMの送信時に行われる文字数のカウントは従来通りのままです
-        /// * NEW: 投稿欄に入力されたリプライと引用ツイートのURLが文字数カウントから除外されます
-        ///  - ツイートへの返信で入力された「@... 」や、引用ツイートのために入力されたツイートURLが240文字のカウントに含まれなくなります
-        ///  - リプライ以外で入力された、またはツイートの先頭以外に含まれる「@... 」は従来通り文字数のカウントに含まれます
-        ///  - ツイートURLについては、文末以外に入力した場合または画像投稿と組み合わせて投稿する場合には従来通り文字数のカウントに含まれます
-        /// * NEW: プロフィール編集時に名前欄に50文字のテキストが入力可能になりました
-        /// * CHG: 画像投稿の対応サー [残りの文字列は切り詰められました]&quot;; に類似しているローカライズされた文字列を検索します。
+        ///==== Ver 2.2.0(2018/11/03)
+        /// * NEW: 絵文字に関する文字数カウントの新仕様に対応しました
+        ///  - この変更により「👩‍👧‍👦」「👨‍🎨」など複数の文字で構成される絵文字を入力した場合の文字数制限が緩和されます
+        /// * NEW: Twemoji 11.2.0 に対応しました
+        ///  - Unicode 11.0 で追加された絵文字が表示されるようになります
+        /// * NEW: ツイートの投稿に失敗し再試行せずにキャンセルした場合は、発言入力欄に未投稿のテキストを復元します
+        /// * NEW: アップデート通知のダイアログに「このバージョンを無視」ボタンを追加しました
+        /// * FIX: ユーザー情報ダイアログでbioに絵文字を含む場合にハッシュタグやメンションのリンク範囲がずれる不具合を修正
+        /// * FIX: 投稿時取得の設定がオンの場合に、投稿したRTがタイムラインに反映されないことがある不具合を修正
+        ///
+        ///==== Ver 2.1.2(2018/09/30)
+        /// * CHG: 投稿時取得 [残りの文字列は切り詰められました]&quot;; に類似しているローカライズされた文字列を検索します。
         /// </summary>
         internal static string ChangeLog {
             get {
@@ -1828,6 +1830,16 @@ namespace OpenTween.Properties {
         internal static string PostButton_Click1 {
             get {
                 return ResourceManager.GetString("PostButton_Click1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   この内容で投稿してもよろしいですか？
+        ///{0} に類似しているローカライズされた文字列を検索します。
+        /// </summary>
+        internal static string PostConfirmText {
+            get {
+                return ResourceManager.GetString("PostConfirmText", resourceCulture);
             }
         }
         
